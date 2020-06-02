@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="table-responsive">
+          <table id="table_mesaje" class="table table-striped">
+            <thead>
+              <tr>
+                <th>id</th>
+                <th>name</th>
+                <th>telefon</th>
+                <th>mesaj</th>
+                <th>Nr Mesaje</th>
+                <th>Lungime</th>
+                <th>User</th>
+                <th>date_added</th>
+                <th>date_sent</th>
+                <th>is_sent</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for mesaj in all_mesaje %}
+              <tr>
+                <td>{{ mesaj.id }}</td>
+                <td>{{ mesaj.name }}</td>
+                <td>{{ mesaj.telefon }}</td>
+                <td>{{ mesaj.mesaj }}</td>
+                <td>{{ mesaj.mesaj_count }}</td>
+                <td>{{ mesaj.mesaj_lenght }}</td>
+                <td>{{ mesaj.owner.username }}</td>
+                <td>{{ mesaj.date_added }}</td>
+                <td>{{ mesaj.date_sent }}</td>
+                <td>{{ mesaj.is_sent }}</td>
+              </tr>
+              {% endfor %}
+
+            </tbody>
+          </table>
+        </div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+
+<script type="text/javascript">
+          $(document).ready(function() {
+              $('#table_mesaje').DataTable( {
+                "order": [[ 0, "desc" ]]
+              } );
+          } );
+</script>
+
+{% endblock %}
