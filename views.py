@@ -114,7 +114,7 @@ def send_test():
         for mesaj in mesaje_netrimise:
 
             send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
-            mesaj.date_sent = datetime.datetime.utcnow()
+            mesaj.date_sent = datetime.utcnow()
             mesaj.is_sent = True
             db.session.commit()
             time.sleep(2)
