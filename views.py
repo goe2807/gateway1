@@ -1,5 +1,5 @@
 from gateway import app, db
-from models import User, Mesaj, Modem
+from models import User, Mesaj, Modem, Logs
 from forms import LoginForm
 from flask import render_template, redirect, request, url_for, make_response, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,10 +7,15 @@ from datetime import datetime
 from uuid import uuid4
 from functools import wraps
 import jwt, math
-import time, datetime
-# dsdsd
-from driver import *
-from utils import *
+import time
+# from driver import *
+from utils import writelog
+
+from driver import Webdriver
+
+url1 = 'https://messages.google.com/web/conversations'
+myWebsite = Webdriver(url1, 'google', 'google_message_web')
+myWebsite.driver
 
 def token_requiered(f):
         @wraps(f)
@@ -114,7 +119,7 @@ def send_test():
     if mesaje_netrimise and modem1.status == 'running':
         for mesaj in mesaje_netrimise:
 
-            send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
+            myWebsite.send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
             mesaj.date_sent = datetime.utcnow()
             mesaj.is_sent = True
             db.session.commit()

@@ -3,6 +3,7 @@ import time
 import urllib.request
 import webbrowser
 from gateway import db
+from utils import writelog
 from models import Mesaj, Modem
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -31,7 +32,8 @@ def counter_numar():
     counter += 1
 
 class Webdriver:
-    def __init__(self, site_url, name):
+    def __init__(self, site_url, name, modem_name):
+        self.modem_name=modem_name
         self.generateBrowser(name)
         self.letssee(site_url)
     def generateBrowser(self, name):
@@ -46,17 +48,15 @@ class Webdriver:
         options.add_argument('--disable-extensions')
         options.add_argument('--disable-gpu')
         options.add_argument("--window-size=800,600")
-
-
         self.driver = webdriver.Chrome(
             executable_path=driver_path, options=options)
         self.driver.set_page_load_timeout(5)
-        modem1 = Modem.query.filter_by(name='google_message_web').first()
+        modem1 = Modem.query.filter_by(name=self.modem_name).first()
         modem1.status = 'stopped'
         db.session.commit()
+        writelog('A fost initializat modemul ' + self.modem_name, '3')
 
     def letssee(self, site_url):
-        #validari modemul
 
         self.driver.get(site_url)
         time.sleep(5)
@@ -70,6 +70,7 @@ class Webdriver:
             # Asteptam 120 de secunde sa dispara codul qr
             print('Preluam codul qr')
             try:
+                writelog('Nu este logat contul, Scanati codul qr : Aveti la dispozitie 2 minute ' + self.modem_name, '3')
                 print('Nu este logat contul, Scanati codul qr : Aveti la dispozitie 2 minute')
                 no_login = WebDriverWait(self.driver, 10).until(
                     EC.invisibility_of_element_located((By.CSS_SELECTOR, qr_selector))
@@ -82,11 +83,13 @@ class Webdriver:
                     # print('Am gasit elementul'+ str(startpage))
                     print('Pagina este gata')
                 except TimeoutException:
+                    writelog('Pagina nu este gata: ' + self.modem_name +' se inchide', '3')
                     print('Pagina nu este gata')
                     self.driver.quit()
 
 
             except TimeoutException:
+                writelog('PPrima pagina nu a fost incarcata: ' + self.modem_name +' se inchide', '3')
                 print('Prima pagina nu a fost incarcata')
                 self.driver.quit()
             else:
@@ -99,56 +102,60 @@ class Webdriver:
                     # print('Am gasit elementul'+ str(startpage))
                     print('Pagina este gata')
                 except TimeoutException:
+                    writelog('Pagina nu este gata: ' + self.modem_name +' se inchide', '3')
                     print('Pagina nu este gata')
         print('Am terminat initializarea')
-        modem1 = Modem.query.filter_by(name='google_message_web').first()
+        writelog('Modemul: ' + self.modem_name +' a fost initializat', '3')
+        modem1 = Modem.query.filter_by(name=self.modem_name).first()
         modem1.status = 'running'
         db.session.commit()
 
-
-
     def letsclose(self):
         self.driver.quit()
-        modem1 = Modem.query.filter_by(name='google_message_web').first()
+        writelog('Modemul: ' + self.modem_name +' a fost inchis', '3')
+        modem1 = Modem.query.filter_by(name=self.modem_name).first()
         modem1.status = 'stopped'
         db.session.commit()
 
-def send_sms(nume, nr_telefon, mesaj):
-    modem1 = Modem.query.filter_by(name='google_message_web').first()
-    modem1.status = 'busy'
-    db.session.commit()
-    time.sleep(10)
-    try:
-        start_chat = WebDriverWait(myWebsite.driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, chat_button_selector))
-        )
-        print('dam clik pe startchat')
-        start_chat.click()
-    except TimeoutException:
-        print('nu pot sa dau click')
-        myWebsite.letsclose()
+    def send_sms(self, nume, nr_telefon, mesaj):
+        modem1 = Modem.query.filter_by(name=self.modem_name).first()
+        modem1.status = 'busy'
+        db.session.commit()
+        time.sleep(10)
+        try:
+            start_chat = WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, chat_button_selector))
+            )
+            print('dam clik pe startchat')
+            start_chat.click()
+        except TimeoutException:
+            print('nu pot sa dau click')
+            writelog(self.modem_name +' nu pot sa dau click', '3')
+            writelog(self.modem_name +' se inchide', '3')
+            self.letsclose()
 
-    nr_telefon = str(nr_telefon)
-    nr_telefon = nr_telefon[0:10]+'\n'
-    try:
-        input_number = WebDriverWait(myWebsite.driver, 10).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, '#mat-chip-list-%d > div > input' % counter))
-        )
-        print(nume + ' cu numarul: ' + nr_telefon + ' primeste mesajul: ' + mesaj)
-        input_number.send_keys(nr_telefon)
+        nr_telefon = str(nr_telefon)
+        nr_telefon = nr_telefon[0:10]+'\n'
+        try:
+            input_number = WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located(
+                    (By.CSS_SELECTOR, '#mat-chip-list-%d > div > input' % counter))
+            )
+            print(nume + ' cu numarul: ' + nr_telefon + ' primeste mesajul: ' + mesaj)
+            input_number.send_keys(nr_telefon)
 
-    except TimeoutException:
-        print('Ceva nu a mers bine: Nu pot sa introduc numarul de telefon')
-        myWebsite.letsclose()
-    counter_numar()
-    mesaj = str(mesaj)
-    input_text = WebDriverWait(myWebsite.driver, 5).until(
-        EC.presence_of_element_located((By.CSS_SELECTOR, input_message_selector))
-    )
-    input_text.send_keys(mesaj+'\n')
-    print('am terminat de scris')
-    time.sleep(10)
+        except TimeoutException:
+            writelog(self.modem_name +' Ceva nu a mers bine: Nu pot sa introduc numarul de telefon', '3')
+            print('Ceva nu a mers bine: Nu pot sa introduc numarul de telefon')
+            self.letsclose()
+        counter_numar()
+        mesaj = str(mesaj)
+        input_text = WebDriverWait(self.driver, 5).until(
+            EC.presence_of_element_located((By.CSS_SELECTOR, input_message_selector))
+        )
+        input_text.send_keys(mesaj+'\n')
+        print('am terminat de scris')
+        time.sleep(10)
 
 def mesaj_watch():
     modem1 = Modem.query.filter_by(name='google_message_web').first()
@@ -169,7 +176,3 @@ def mesaj_watch():
         return "<a href='/'>Modemul nu este pornit </a>"
     else:
         return "nu pot trimite nimic"
-
-url1 = 'https://messages.google.com/web/conversations'
-myWebsite = Webdriver(url1, 'google')
-myWebsite.driver

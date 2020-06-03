@@ -33,7 +33,9 @@
 
 <script type="text/javascript">
           $(document).ready(function() {
-              $('#table_logs').DataTable();
+              $('#table_logs').DataTable({
+                 "order": [[ 0, "desc" ]]
+               } );
           } );
 </script>
 
