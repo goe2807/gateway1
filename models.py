@@ -35,5 +35,6 @@ class Logs(db.Model):
 class Modem(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), unique=True, nullable=False)
+    type = db.Column(db.String(80), nullable=False)
     qr_code = db.Column(db.String(800), nullable=True)
     status = db.Column(db.String(80), nullable=False)

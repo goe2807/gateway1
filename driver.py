@@ -53,8 +53,7 @@ class Webdriver:
         self.driver.set_page_load_timeout(5)
         modem1 = Modem.query.filter_by(name=self.modem_name).first()
         modem1.status = 'stopped'
-        db.session.commit()
-        writelog('A fost initializat modemul ' + self.modem_name, '3')
+        db.session.commit()        
 
     def letssee(self, site_url):
 

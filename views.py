@@ -3,19 +3,20 @@ from models import User, Mesaj, Modem, Logs
 from forms import LoginForm
 from flask import render_template, redirect, request, url_for, make_response, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime, timedelta
 from uuid import uuid4
 from functools import wraps
 import jwt, math
 import time
-# from driver import *
 from utils import writelog
 
 from driver import Webdriver
 
 url1 = 'https://messages.google.com/web/conversations'
-myWebsite = Webdriver(url1, 'google', 'google_message_web')
-myWebsite.driver
+
+google_message_web = Webdriver(url1, 'google', 'google_message_web')
+google_message_web.driver
+
 
 def token_requiered(f):
         @wraps(f)
@@ -52,7 +53,7 @@ def api_login():
         return make_response('Could not verify', 401, {'WWW=Authenticate' : 'Basic realm = "Login required"'})
 
     if check_password_hash(user.password, auth.password):
-        token = jwt.encode({'public_id' : user.public_id, 'exp' : datetime.datetime.utcnow() + datetime.timedelta(minutes=360)}, app.config['SECRET_KEY'])
+        token = jwt.encode({'public_id' : user.public_id, 'exp' : datetime.utcnow() + timedelta(minutes=360)}, app.config['SECRET_KEY'])
         writelog(add_ip + ' Am emis tokenul pentru ' + user.username, user.id)
         return jsonify({'token' : token.decode('UTF-8')})
     writelog(add_ip + ' Could not verify', 1)
@@ -125,6 +126,27 @@ def send_test():
             db.session.commit()
             time.sleep(2)
         modem1 = Modem.query.filter_by(name='google_message_web').first()
+        modem1.status = 'running'
+        db.session.commit()
+        return "<a href='/'>am trimis ceva... cred</a>"
+    elif modem1.status != 'running':
+        return "<a href='/'>Modemul nu este pornit </a>"
+    else:
+        return "nu pot trimite nimic"
+
+@app.route('/send_test2')
+def send_test2():
+    modem1 = Modem.query.filter_by(status='running').first()
+    modems = {modem1.name : google_message_web}
+    # modem_name = modem1.name
+    mesaje_netrimise = Mesaj.query.filter_by(is_sent=False).all()
+    if mesaje_netrimise:
+        for mesaj in mesaje_netrimise:
+            modems[modem1.name].send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
+            mesaj.date_sent = datetime.utcnow()
+            mesaj.is_sent = True
+            db.session.commit()
+            time.sleep(2)
         modem1.status = 'running'
         db.session.commit()
         return "<a href='/'>am trimis ceva... cred</a>"
