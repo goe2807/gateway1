@@ -53,7 +53,7 @@ class Webdriver:
         self.driver.set_page_load_timeout(5)
         modem1 = Modem.query.filter_by(name=self.modem_name).first()
         modem1.status = 'stopped'
-        db.session.commit()        
+        db.session.commit()
 
     def letssee(self, site_url):
 
@@ -155,23 +155,3 @@ class Webdriver:
         input_text.send_keys(mesaj+'\n')
         print('am terminat de scris')
         time.sleep(10)
-
-def mesaj_watch():
-    modem1 = Modem.query.filter_by(name='google_message_web').first()
-    mesaje_netrimise = Mesaj.query.filter_by(is_sent=False).all()
-    if mesaje_netrimise and modem1.status == 'running':
-        for mesaj in mesaje_netrimise:
-
-            send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
-            mesaj.date_sent = datetime.utcnow()
-            mesaj.is_sent = True
-            db.session.commit()
-            time.sleep(2)
-        modem1 = Modem.query.filter_by(name='google_message_web').first()
-        modem1.status = 'running'
-        db.session.commit()
-        return "<a href='/'>am trimis ceva... cred</a>"
-    elif modem1.status != 'running':
-        return "<a href='/'>Modemul nu este pornit </a>"
-    else:
-        return "nu pot trimite nimic"

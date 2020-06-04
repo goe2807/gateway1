@@ -9,13 +9,30 @@ from functools import wraps
 import jwt, math
 import time
 from utils import writelog
-
 from driver import Webdriver
 
 url1 = 'https://messages.google.com/web/conversations'
 
 google_message_web = Webdriver(url1, 'google', 'google_message_web')
 google_message_web.driver
+
+def mesaj_watch():
+    modem1 = Modem.query.filter_by(status='running').first()
+    mesaje_netrimise = Mesaj.query.filter_by(is_sent=False).all()
+    if mesaje_netrimise:
+        for mesaj in mesaje_netrimise:
+            google_message_web.send_sms(mesaj.name, mesaj.telefon, mesaj.mesaj)
+            mesaj.date_sent = datetime.utcnow()
+            mesaj.is_sent = True
+            db.session.commit()
+            time.sleep(2)
+        modem1.status = 'running'
+        db.session.commit()
+        return "<a href='/'>am trimis ceva... cred</a>"
+    elif modem1.status != 'running':
+        return "<a href='/'>Modemul nu este pornit </a>"
+    else:
+        return "nu pot trimite nimic"
 
 
 def token_requiered(f):
@@ -37,7 +54,6 @@ def token_requiered(f):
             return f(current_user, *args, **kwargs)
         return decorated
 
-# Rute pentru api fdfd gfgsfd
 @app.route('/api_login')
 def api_login():
     auth = request.authorization
@@ -154,3 +170,9 @@ def send_test2():
         return "<a href='/'>Modemul nu este pornit </a>"
     else:
         return "nu pot trimite nimic"
+
+
+
+
+
+app.apscheduler.add_job(func=mesaj_watch, trigger='interval', seconds=30, id='j')
